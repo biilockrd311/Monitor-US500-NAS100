@@ -1,0 +1,48 @@
+name: Reportes Price Action ES & NQ
+
+on:
+  schedule:
+    # --- Horario Estándar (Invierno NY - EST / UTC-5) ---
+    - cron: '30 13 * * 1-5'   # 08:30 AM NY
+    - cron: '0 17 * * 1-5'    # 12:00 PM NY
+    - cron: '0 22 * * 1-5'    # 05:00 PM NY
+    # --- Horario de Verano (EDT / UTC-4) ---
+    - cron: '30 12 * * 1-5'   # 08:30 AM NY
+    - cron: '0 16 * * 1-5'    # 12:00 PM NY
+    - cron: '0 21 * * 1-5'    # 05:00 PM NY
+
+  # Permite ejecutar un reporte de prueba manualmente desde la pestaña "Actions"
+  workflow_dispatch:
+    inputs:
+      reporte_manual:
+        description: 'Número de reporte a probar (1 = 08:30 AM, 2 = 12:00 PM, 3 = 05:00 PM)'
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+
+jobs:
+  enviar-reporte:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 3. Instalar librerías necesarias
+        run: pip install -r requirements.txt
+
+      - name: 4. Ejecutar Monitor y Enviar a Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPORTE_MANUAL: ${{ github.event.inputs.reporte_manual }}
+        run: python monitor_es_nq.py
