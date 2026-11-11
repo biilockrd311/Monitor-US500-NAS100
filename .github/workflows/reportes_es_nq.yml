@@ -11,7 +11,6 @@ on:
     - cron: '0 16 * * 1-5'    # 12:00 PM NY
     - cron: '0 21 * * 1-5'    # 05:00 PM NY
 
-  # Permite ejecutar un reporte de prueba manualmente desde la pestaña "Actions"
   workflow_dispatch:
     inputs:
       reporte_manual:
@@ -26,23 +25,21 @@ on:
 
 jobs:
   enviar-reporte:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: 1. Descargar código del repositorio
         uses: actions/checkout@v4
 
-      - name: 2. Configurar Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: 3. Instalar librerías necesarias
-        run: pip install -r requirements.txt
-
-      - name: 4. Ejecutar Monitor y Enviar a Discord
+      - name: 2. Instalar librerías y Ejecutar Monitor con Gráficos 15m
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           REPORTE_MANUAL: ${{ github.event.inputs.reporte_manual }}
-        run: python monitor_es_nq.py
+        run: |
+          pip install --break-system-packages --quiet yfinance pandas pytz requests matplotlib mplfinance
+          SCRIPT_PATH=$(find . -maxdepth 3 -iname "monitor_es_nq*.py" | head -n 1)
+          if [ -z "$SCRIPT_PATH" ]; then
+            echo "❌ Error: No se encontró el archivo monitor_es_nq.py"
+            exit 1
+          fi
+          python3 "$SCRIPT_PATH"
